@@ -1,32 +1,44 @@
 #' Standardfehler bei einem Unternehmenseffekt und korrelierten Regressoren
 #'
-#' Die Funktion berechnet für die angegebene Anzahl an Simulationen die wahren Standardabweichungen des OLS und Fama-MacBeth Schätzers und die geschätzten Standardabweichungen nach OLS, Fama-MacBeth, Cluster, Cluster plus Schock und Newey-West und bildet darüber den Durchschnitt.
-#' @details Da die Anzahl der Regressoren erst in den Argumenten der Funktion bestimmt wird, wird der Nutzer nach dem starten der Funktion aufgefordert, die Korrelationen der Regressoren anzugeben.
+#' Die Funktion berechnet die geschätzten und wahren Standardfehler bei einem Unternehmenseffekt und korrelierten Regressoren.
+#' @details Die Anzahl der Regressoren ist ein Argument der Funktion.
+#' Nach dem Starten der Funtion wird der Nutzer aufgefordert, für jeden Regressor die
+#' Korrelation innerhalb der Unternehmenscluster anzugeben.
 #'
 #' @param N N bestimmt die Anzahl der Firmen im Paneldatensatz
-#' @param T N bestimmt die Anzahl der Jahre im Paneldatensatz
-#' @param Anzahl_Regressoren Legt die Anzahl der Regressoren fest
-#' @param Anz_Sim Legt die Anzahl der Simulationen fest. Der Parameter bestimmt wie oft die wahren Standardfehler und die geschätzten für einen Paneldatensatz mit N Unternehmen und T Zeitperioden berechnet werden sollen.
-#' @returns Für jede Schätzung eines Betas die wahren Standardfehler für die OLS Regression und die Fama-MacBeth Regression
-#' sowie die Schätzung der Standardfehler nach
+#' @param T T bestimmt die Anzahl der Perioden im Paneldatensatz
+#' @param Anzahl_Regressoren Anzahl der Regressoren
+#' @param Anz_Sim Anzahl der Simulationen. Anz_Sim bestimmt, wieviele Paneldatensätze
+#' mit N Unternehmen und T Perioden simuliert werden sollen.
+#' @param Anteil_u Hohe der Korrelation innerhalb der Unternehmenscluster der Fehlervariable
+#' (Anteil der Varianz des Unternehmenseffekts an der gesamten Varianz der Fehlervariable)
+#' @param Corr_nu Höhe der Korrelation zwischen den Komponenten der erklärenden Variablen,
+#' die sich für jedes Unternehmen und jede Periode neu realisieren
+#' @param Corr_mu Hohe der Korrelation zwischen den Unternehmenseffekten der Regressoren
+#' @returns Vektor mit Länge 6. Durchschnittliche Schätzung der Standardfehler nach OLS, Fama-MacBeth, Cluster und Newey-West sowie
+#' die durchschnittlichen wahren Standardfehler der OLS Regression und der Fama-MacBeth Regression
 #' @importFrom plm plm
 #' @export
-Unternehmeneffekt_korrRegressoren <- function(N = 500, T = 10, Anzahl_Regressoren = 1,
+Unternehmeneffekt_korrRegressoren <- function(N = 500, T = 10, Anzahl_Regressoren = 2,
                                               Anz_Sim = 100, Anteil_u = 0.25,
                                               Corr_nu = 0.3, Corr_mu = 0.3){
+
   beta <- 1
 
-  Var_X <- 1
-  Var_eta <- 2^2
-
-  Var_u <- Anteil_u*Var_eta
-
   for(i in 1:Anzahl_Regressoren){
-    assign(paste0("Var_mu",i),
-           as.double(readline(prompt = paste("Geben Sie die Varianz des Unternehmenseffekts von", paste0("X",i) ,"an ")))
+    assign(paste0("Anteil_mu",i),
+           as.double(readline(prompt = paste("Legen Sie für Regressor", paste0("X",i) , "die Höhe der Korrelation zwischen Variablen des gleichen Unternehmens fest ")))
     )
   }
+  for(r in 1:Anzahl_Regressoren){
+    assign(paste0("Var_X", r), 1^2)
+    assign("x",get(paste0("Anteil_mu",r)))
+    assign("y",get(paste0("Var_X",r)))
+    assign(paste0("Var_mu", r), x*y)
+  }
 
+  Var_eta <- 2^2
+  Var_u <- Anteil_u*Var_eta
 
   # Unternehmens- und Zeitvariable erstellen
 
@@ -150,6 +162,11 @@ Unternehmeneffekt_korrRegressoren <- function(N = 500, T = 10, Anzahl_Regressore
       }
     }
 
+    Var_X <- vector(mode = "double", length = Anzahl_Regressoren)
+    for(i in 1:Anzahl_Regressoren){
+      assign("x", get(paste0("Var_X",i)))
+      Var_X[i] <- x
+    }
 
     Var_X_Vektor2 <- Var_X-Var_X_Vektor1
     nu_Mat <- as.matrix(faux::rnorm_multi(n = N*T, vars = Anzahl_Regressoren, mu = rep(0, times = Anzahl_Regressoren),
@@ -158,14 +175,14 @@ Unternehmeneffekt_korrRegressoren <- function(N = 500, T = 10, Anzahl_Regressore
     X_Mat <- mu_Mat_neu + nu_Mat
 
 
-    u <- rnorm(N, mean = 0, sd = sqrt(Var_u))
+    u <- stats::rnorm(N, mean = 0, sd = sqrt(Var_u))
     u_neu <- vector(mode = "double", length = N*T)
     for(i in 1:N){
       for(t in 1:T){
         u_neu[(i-1)*T+t] <- u[i]
       }
     }
-    epsilon <- rnorm(N*T, mean = 0, sd = sqrt(Var_eta-Var_u))
+    epsilon <- stats::rnorm(N*T, mean = 0, sd = sqrt(Var_eta-Var_u))
     eta <- epsilon + u_neu
 
 
@@ -178,88 +195,93 @@ Unternehmeneffekt_korrRegressoren <- function(N = 500, T = 10, Anzahl_Regressore
 
     # Paneldaten Regression durchführen
 
-    multReg_data <- data.frame(X_Mat, unternehmen, jahr, y)
-    multReg_data_names <- vector(mode = "character", length = Anzahl_Regressoren + 3)
-    multReg_data_names[(Anzahl_Regressoren+1):(Anzahl_Regressoren+3)] <- c("unternehmen", "jahr", "y")
+    daten <- data.frame(X_Mat, unternehmen, jahr, y)
+    daten_colnames <- vector(mode = "character", length = Anzahl_Regressoren + 3)
+    daten_colnames[(Anzahl_Regressoren+1):(Anzahl_Regressoren+3)] <- c("unternehmen", "jahr", "y")
     for(i in 1:Anzahl_Regressoren){
-      multReg_data_names[i] <- paste0("X",i)
+      daten_colnames[i] <- paste0("X",i)
     }
-    colnames(multReg_data) <- multReg_data_names
-    multReg_paneldata <- plm::pdata.frame(multReg_data, index = c("unternehmen","jahr"))
+    colnames(daten) <- daten_colnames
+    paneldaten <- plm::pdata.frame(daten, index = c("unternehmen","jahr"))
 
-    RegGleich <- paste0("y ~ 0 + X1")
+    RegGleich <- paste0("y ~ X1")
     if(Anzahl_Regressoren > 1){
       for(i in 2:Anzahl_Regressoren){
         assign(paste0("RegGleich"), paste0(RegGleich, paste0(" + X",i)))
       }
     }
-    multPanelReg <- plm::plm(as.formula(RegGleich), data = multReg_paneldata, model = "pooling")
 
-    mult_Reg_Residuen <- matrix(resid(multPanelReg))
+    Reg <- plm::plm(stats::as.formula(RegGleich), data = paneldaten, model = "pooling")
 
     # Standardfehler berechnen
 
     # OLS Standardfehler
 
-    multReg_sd_OLS <- lmtest::coeftest(multPanelReg)[,2]
+    sd_OLS <- lmtest::coeftest(Reg)[2:(Anzahl_Regressoren + 1),2]
     for(i in 1:Anzahl_Regressoren){
-      Ergeb_Mat[[i]][D,1] <- multReg_sd_OLS[i]
+      Ergeb_Mat[[i]][D,1] <- sd_OLS[i]
     }
 
     # Fama-MacBeth Standardfehler
-    Fama_multReg_paneldata <- plm::pdata.frame(multReg_data, index = c("jahr", "unternehmen"))
+    paneldaten_Fama <- plm::pdata.frame(daten, index = c("jahr", "unternehmen"))
 
-    multFamaReg <- plm::pmg(as.formula(RegGleich), data = Fama_multReg_paneldata, model = "mg")
+    Reg_Fama <- plm::pmg(stats::as.formula(RegGleich), data = paneldaten_Fama, model = "mg")
 
-    multReg_sd_Fama <- lmtest::coeftest(multFamaReg)[,2]
+    sd_Fama <- lmtest::coeftest(Reg_Fama)[2:(Anzahl_Regressoren + 1),2]
     for(i in 1:Anzahl_Regressoren){
-      Ergeb_Mat[[i]][D,2] <- multReg_sd_Fama[i]
+      Ergeb_Mat[[i]][D,2] <- sd_Fama[i]
     }
 
     # Cluster Standardfehler
 
-    multReg_VarMat_Cluster <- plm::vcovHC(multPanelReg)
-    multReg_Var_Cluster <- vector(mode = "double", length = Anzahl_Regressoren)
-    for(i in 1:Anzahl_Regressoren){
-      multReg_Var_Cluster[i] <- multReg_VarMat_Cluster[i,i]
+    VarMat_Cluster <- plm::vcovHC(Reg)
+    Var_Cluster <- vector(mode = "double", length = Anzahl_Regressoren)
+    for(i in 2:(Anzahl_Regressoren + 1)){
+      Var_Cluster[i-1] <- VarMat_Cluster[i,i]
     }
-    multReg_sd_Cluster <- sqrt(multReg_Var_Cluster)
+    sd_Cluster <- sqrt(Var_Cluster)
     for(i in 1:Anzahl_Regressoren){
-      Ergeb_Mat[[i]][D,3] <- multReg_sd_Cluster[i]
+      Ergeb_Mat[[i]][D,3] <- sd_Cluster[i]
     }
 
     # Newey-West Standardfehler
 
-    multReg_VarMat_Newey <- plm::vcovNW(multPanelReg, maxlag = (T-1))
-    multReg_Var_Newey <- vector(mode = "double", length = Anzahl_Regressoren)
-    for(i in 1:Anzahl_Regressoren){
-      multReg_Var_Newey[i] <- multReg_VarMat_Newey[i,i]
+    VarMat_Newey <- plm::vcovNW(Reg, maxlag = (T-1))
+    Var_Newey <- vector(mode = "double", length = Anzahl_Regressoren)
+    for(i in 2:(Anzahl_Regressoren + 1)){
+      Var_Newey[i-1] <- VarMat_Newey[i,i]
     }
-    multReg_sd_Newey <- sqrt(multReg_Var_Newey)
+    sd_Newey <- sqrt(Var_Newey)
     for(i in 1:Anzahl_Regressoren){
-      Ergeb_Mat[[i]][D,4] <- multReg_sd_Newey[i]
+      Ergeb_Mat[[i]][D,4] <- sd_Newey[i]
     }
 
 
     # wahre Varianz OLS
     # Var(b|X)=(X'X)^{-1}X'\Omega X(X'X)^{-1}
 
+    intercept <- as.matrix(rep(1, times = N*T))
+    X_Mat <- cbind(intercept, X_Mat)
+
     Varianzmatrix <- solve(t(X_Mat)%*%X_Mat)%*%t(X_Mat)%*%Cov_Matrix%*%X_Mat%*%solve(t(X_Mat)%*%X_Mat)
-    multReg_wahreVar <- vector(mode = "double", length = Anzahl_Regressoren)
-    for(i in 1:Anzahl_Regressoren){
-      multReg_wahreVar[i] <- Varianzmatrix[i,i]
+    wahreVar <- vector(mode = "double", length = Anzahl_Regressoren)
+    for(i in 2:(Anzahl_Regressoren + 1)){
+      wahreVar[i-1] <- Varianzmatrix[i,i]
     }
-    multReg_wahresd <- sqrt(multReg_wahreVar)
+    wahresd <- sqrt(wahreVar)
     for(i in 1:Anzahl_Regressoren){
-      Ergeb_Mat[[i]][D,5] <- multReg_wahresd[i]
+      Ergeb_Mat[[i]][D,5] <- wahresd[i]
     }
 
 
     # wahre Varianz Fama
 
+    X_Mat_Fama <- cbind(intercept,
+                        as.matrix(as.data.frame(paneldaten_Fama[,1:Anzahl_Regressoren])))
+
     X_Mat_t <- vector(mode = "list", length = T)
     for(t in 1:T){
-      X_Mat_t[[t]] <- data.matrix(as.data.frame(Fama_multReg_paneldata[(N*(t-1)+1):(N*t),1:Anzahl_Regressoren]))
+      X_Mat_t[[t]] <- X_Mat_Fama[(N*(t-1)+1):(N*t),]
     }
     X_Mat_sum1 <- vector(mode = "list", length = T)
     for(t in 1:T){
@@ -276,14 +298,14 @@ Unternehmeneffekt_korrRegressoren <- function(N = 500, T = 10, Anzahl_Regressore
 
     Varianzmatrix_Fama <- (1/(T^2))*(Reduce("+", X_Mat_sum1))+2*(1/(T^2))*(Reduce("+", X_Mat_sum2))
 
-    multReg_wahreVar_Fama <- vector(mode = "double", length = Anzahl_Regressoren)
-    for(i in 1:Anzahl_Regressoren){
-      multReg_wahreVar_Fama[i] <- Varianzmatrix_Fama[i,i]
+    wahreVar_Fama <- vector(mode = "double", length = Anzahl_Regressoren)
+    for(i in 2:(Anzahl_Regressoren + 1)){
+      wahreVar_Fama[i-1] <- Varianzmatrix_Fama[i,i]
     }
-    multReg_wahresd_Fama <- sqrt(multReg_wahreVar_Fama)
+    wahresd_Fama <- sqrt(wahreVar_Fama)
 
     for(i in 1:Anzahl_Regressoren){
-      Ergeb_Mat[[i]][D,6] <- multReg_wahresd_Fama[i]
+      Ergeb_Mat[[i]][D,6] <- wahresd_Fama[i]
     }
 
 

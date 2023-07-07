@@ -15,20 +15,25 @@ Zeiteffekt(
 \arguments{
 \item{N}{N bestimmt die Anzahl der Firmen im Paneldatensatz}
 
-\item{T}{T bestimmt die Anzahl der Jahre im Paneldatensatz}
+\item{T}{T bestimmt die Anzahl der Perioden im Paneldatensatz}
 
-\item{Anzahl_Regressoren}{Legt die Anzahl der Regressoren fest}
+\item{Anzahl_Regressoren}{Anzahl der Regressoren}
 
-\item{Anz_Sim}{Legt die Anzahl der Simulationen fest. Der Parameter bestimmt wie oft die wahren Standardfehler und die geschätzten für einen Paneldatensatz mit N Unternehmen und T Zeitperioden berechnet werden sollen.}
+\item{Anz_Sim}{Anzahl der Simulationen. Anz_Sim bestimmt, wieviele Paneldatensätze
+mit N Unternehmen und T Perioden simuliert werden sollen.}
 
-\item{Anteil_delta}{Anteil des Zeiteffekts an der gesamten Varianz der Fehlervariable}
+\item{Anteil_delta}{Hohe der Korrelation innerhalb der Zeitcluster der Fehlervariable
+(Anteil der Varianz des Zeiteffekts an der gesamten Varianz der Fehlervariable)}
 }
 \value{
-Matrix mit den wahren und geschätzten Standardfehlern
+Vektor mit Länge 6. Durchschnittliche Schätzung der Standardfehler nach OLS, Fama-MacBeth, Cluster und Newey-West sowie
+die durchschnittlichen wahren Standardfehler der OLS Regression und der Fama-MacBeth Regression
 }
 \description{
-Die Funktion berechnet für die angegebene Anzahl an Simulationen die wahren Standardabweichungen des OLS und Fama-MacBeth Schätzers und die geschätzten Standardabweichungen nach OLS, Fama-MacBeth, Cluster, Cluster plus Schock und Newey-West und bildet darüber den Durchschnitt.
+Die Funktion berechnet die geschätzten und wahren Standardfehler bei einem Zeiteffekt.
 }
 \details{
-Da die Anzahl der Regressoren erst in den Argumenten der Funktion bestimmt wird, wird der Nutzer nach dem starten der Funktion aufgefordert, die Korrelationen der Regressoren anzugeben.
+Die Anzahl der Regressoren ist ein Argument der Funktion.
+Nach dem Starten der Funtion wird der Nutzer aufgefordert, für jeden Regressor die
+Korrelation innerhalb der Zeitcluster anzugeben.
 }

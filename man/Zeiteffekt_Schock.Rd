@@ -2,7 +2,7 @@
 % Please edit documentation in R/Zeiteffekt_Schock.R
 \name{Zeiteffekt_Schock}
 \alias{Zeiteffekt_Schock}
-\title{Standardfehler bei einem Zeiteffekt und Schock}
+\title{Standardfehler bei Korrelation über die Zeitcluster hinaus}
 \usage{
 Zeiteffekt_Schock(
   N = 500,
@@ -10,23 +10,41 @@ Zeiteffekt_Schock(
   Anz_Sim = 100,
   Anteil_zeta = 0.25,
   Anteil_delta = 0.25,
-  lag_X = 1,
-  lag_eta = 1
+  lag_X = 0,
+  lag_eta = 0,
+  lag_D_K = 9
 )
 }
 \arguments{
 \item{N}{N bestimmt die Anzahl der Firmen im Paneldatensatz}
 
-\item{T}{N bestimmt die Anzahl der Jahre im Paneldatensatz}
+\item{T}{T bestimmt die Anzahl der Perioden im Paneldatensatz}
 
-\item{Anz_Sim}{Legt die Anzahl der Simulationen fest. Der Parameter bestimmt wie oft die wahren Standardfehler und die geschätzten für einen Paneldatensatz mit N Unternehmen und T Zeitperioden berechnet werden sollen.}
+\item{Anz_Sim}{Anzahl der Simulationen. Anz_Sim bestimmt, wieviele Paneldatensätze
+mit N Unternehmen und T Perioden simuliert werden sollen.}
 
-\item{Anzahl_Regressoren}{Legt die Anzahl der Regressoren fest}
+\item{Anteil_zeta}{Hohe der Korrelation innerhalb der Zeitcluster der erklärenden Variable
+(Anteil der Varianz des Zeiteffekts an der gesamten Varianz der erklärenden Variable)}
+
+\item{Anteil_delta}{Hohe der Korrelation innerhalb der Zeitcluster der Fehlervariable
+(Anteil der Varianz des Zeiteffekts an der gesamten Varianz der Fehlervariable)}
+
+\item{lag_X}{Distanz |t-s| für die, die erklärenden Variablen verschiedener Perioden korreliert sind}
+
+\item{lag_eta}{Distanz |t-s| für die, die Fehlervariablen verschiedener Perioden korreliert sind}
+
+\item{lag_D_K}{Höhe des L des Discroll-Kraay Schätzers}
 }
 \value{
-Für jede Schätzung eines Betas die wahren Standardfehler für die OLS Regression und die Fama-MacBeth Regression
-sowie die Schätzung der Standardfehler nach
+Vektor mit Länge 8. Durchschnittliche Schätzung der Standardfehler nach OLS, Fama-MacBeth, Cluster,
+Discroll-Kraay, Cluster-Schock und Newey-West sowie
+der durchschnittlichen wahren Standardfehler der OLS Regression und der Fama-MacBeth Regression
 }
 \description{
-Die Funktion berechnet für die angegebene Anzahl an Simulationen die wahren Standardabweichungen des OLS und Fama-MacBeth Schätzers und die geschätzten Standardabweichungen nach OLS, Fama-MacBeth, Cluster, Cluster plus Schock und Newey-West und bildet darüber den Durchschnitt.
+Die Funktion berechnet die geschätzten und wahren Standardfehler bei erklärenden Variablen und Fehlervariablen,
+die über die Zeitcluster hinaus korreliert sind.
+}
+\details{
+Da die Anzahl der Regressoren nicht die Fehlschätzung beeinflusst,
+simuliert diese Funktion nur Regressionen mit einem Regressor
 }

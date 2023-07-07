@@ -4,13 +4,14 @@ Title: Standardfehler in Paneldaten
 Version: 0.1.0
 Authors@R: person("Franz", "Wetzel", email = "wetzef00@zedat.fu-berlin.de", 
   role = c("aut", "cre"))
-Description: Die Funktionen in diesem Paket simulieren Paneldatensets für die sowohl die 
+Description: Die Funktionen in diesem Paket simulieren Paneldatensätze für die sowohl die 
     wahren als auch die geschätzten Standardfehler berechnet werden. 
     Durch Vergleich von wahrem und geschätztem Standardfehler kann die Höhe der Fehlschätzung berechnet werden.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports: 
+    stats,
     plm,
     lmtest,
     faux

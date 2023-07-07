@@ -1,18 +1,32 @@
-#' Standardfehler bei einem Zeiteffekt und Schock
+#' Standardfehler bei Korrelation über die Zeitcluster hinaus
 #'
-#' Die Funktion berechnet für die angegebene Anzahl an Simulationen die wahren Standardabweichungen des OLS und Fama-MacBeth Schätzers und die geschätzten Standardabweichungen nach OLS, Fama-MacBeth, Cluster, Cluster plus Schock und Newey-West und bildet darüber den Durchschnitt.
+#' Die Funktion berechnet die geschätzten und wahren Standardfehler bei erklärenden Variablen und Fehlervariablen,
+#' die über die Zeitcluster hinaus korreliert sind.
+#' @details Da die Anzahl der Regressoren nicht die Fehlschätzung beeinflusst,
+#' simuliert diese Funktion nur Regressionen mit einem Regressor
 #'
 #' @param N N bestimmt die Anzahl der Firmen im Paneldatensatz
-#' @param T N bestimmt die Anzahl der Jahre im Paneldatensatz
-#' @param Anzahl_Regressoren Legt die Anzahl der Regressoren fest
-#' @param Anz_Sim Legt die Anzahl der Simulationen fest. Der Parameter bestimmt wie oft die wahren Standardfehler und die geschätzten für einen Paneldatensatz mit N Unternehmen und T Zeitperioden berechnet werden sollen.
-#' @returns Für jede Schätzung eines Betas die wahren Standardfehler für die OLS Regression und die Fama-MacBeth Regression
-#' sowie die Schätzung der Standardfehler nach
+#' @param T T bestimmt die Anzahl der Perioden im Paneldatensatz
+#' @param Anz_Sim Anzahl der Simulationen. Anz_Sim bestimmt, wieviele Paneldatensätze
+#' mit N Unternehmen und T Perioden simuliert werden sollen.
+#' @param Anteil_zeta Hohe der Korrelation innerhalb der Zeitcluster der erklärenden Variable
+#' (Anteil der Varianz des Zeiteffekts an der gesamten Varianz der erklärenden Variable)
+#' @param Anteil_delta Hohe der Korrelation innerhalb der Zeitcluster der Fehlervariable
+#' (Anteil der Varianz des Zeiteffekts an der gesamten Varianz der Fehlervariable)
+#' @param lag_X Distanz |t-s| für die, die erklärenden Variablen verschiedener Perioden korreliert sind
+#' @param lag_eta Distanz |t-s| für die, die Fehlervariablen verschiedener Perioden korreliert sind
+#' @param lag_D_K Höhe des L des Discroll-Kraay Schätzers
+#' @returns Vektor mit Länge 8. Durchschnittliche Schätzung der Standardfehler nach OLS, Fama-MacBeth, Cluster,
+#' Discroll-Kraay, Cluster-Schock und Newey-West sowie
+#' der durchschnittlichen wahren Standardfehler der OLS Regression und der Fama-MacBeth Regression
 #' @importFrom plm plm
 #' @export
 Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
                               Anteil_zeta = 0.25, Anteil_delta = 0.25,
-                              lag_X = 1, lag_eta = 1){
+                              lag_X = 0, lag_eta = 0, lag_D_K = 9){
+
+  lag_X <- lag_X + 1
+  lag_eta <- lag_eta + 1
 
   beta <- 1
 
@@ -36,36 +50,18 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
   }
 
 
-  # Anteil von individuellem und gemeinsamem Effekt an der gesamten Varianz der Regressoren
-
-  AnteilVarJointEffekt <- 1/1^2
-
-
   # Unternehmens- und Zeitvariable erstellen
 
-  unternehmen1 <- vector(mode = "double", length = N*T)
-  for(i in 1:N){
-    for(t in 1:T){
-      unternehmen1[T*(i-1)+t] <- i
-    }
-  }
-  jahr1 <- vector(mode = "double", length = N*T)
-  for(i in 1:N){
-    for(t in 1:T){
-      jahr1[T*(i-1)+t] <- 2000+t
-    }
-  }
-
-  unternehmen2 <- vector(mode = "double", length = N*T)
+  unternehmen <- vector(mode = "double", length = N*T)
   for(t in 1:T){
     for(i in 1:N){
-      unternehmen2[N*(t-1)+i] <- i
+      unternehmen[N*(t-1)+i] <- i
     }
   }
-  jahr2 <- vector(mode = "double", length = N*T)
+  jahr <- vector(mode = "double", length = N*T)
   for(t in 1:T){
     for(i in 1:N){
-      jahr2[N*(t-1)+i] <- 2000+t
+      jahr[N*(t-1)+i] <- 2000+t
     }
   }
 
@@ -79,10 +75,10 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
       for(j in 1:N){
         for(s in 1:T){
           x <- abs(t-s)
-          if(T*(i-1)+t==T*(j-1)+s){
+          if(i==j & t==s){
             Cov_Matrix_OLS[T*(i-1)+t,T*(j-1)+s] <- Var_eta
           }
-          else if(t==s){
+          else if(x==0){
             Cov_Matrix_OLS[T*(i-1)+t,T*(j-1)+s] <- lag_eta*Var_delta
           }
           else if(lag_eta > 1 & x > 0 & x <= (lag_eta-1)){
@@ -104,7 +100,7 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
         Cov_Matrix_Fama1[i,j] <- Var_eta
       }
       else{
-        Cov_Matrix_Fama1[i,j] <- lag_eta*Var_delta
+        Cov_Matrix_Fama1[i,j] <- 0
       }
     }
   }
@@ -119,9 +115,9 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
 
   # Vorbereitung Simulation
 
-  Ergeb_Matrix <- matrix(rep(0, times = Anz_Sim*7), ncol = 7)
-  colnames(Ergeb_Matrix) <- c("OLS", "Fama-MacBeth", "Cluster", "Cluster, Schock", "Newey-West",
-                              "wahre Standardabweichung OLS", "wahre Standardabweichung Fama")
+  Ergeb_Matrix <- matrix(rep(0, times = Anz_Sim*8), ncol = 8)
+  colnames(Ergeb_Matrix) <- c("OLS", "Fama-MacBeth", "Cluster", "Driscoll-Kraay", "Cluster, Schock",
+                              "Newey-West", "wahre Standardabweichung OLS", "wahre Standardabweichung Fama")
 
 
   # Simulation
@@ -134,7 +130,7 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
     # X
 
     for(r in 1:lag_X){
-      assign(paste0("zeta", r), rnorm((T/lag_X)+1, mean = 0, sd = sqrt(Var_zeta)))
+      assign(paste0("zeta", r), stats::rnorm((T/lag_X)+1, mean = 0, sd = sqrt(Var_zeta)))
       assign(paste0("zeta", r, "_neu"), vector(mode = "double", length = N*T))
 
       assign("x", get(paste0("zeta", r, "_neu")))
@@ -161,7 +157,7 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
     }
 
 
-    nu <- rnorm(N*T, mean = 0, sd = sqrt(Var_X-lag_X*Var_zeta))
+    nu <- stats::rnorm(N*T, mean = 0, sd = sqrt(Var_X-lag_X*Var_zeta))
     X <- nu
     for(r in 1:lag_X){
       assign("X", X + get(paste0("zeta", r, "_neu")))
@@ -172,7 +168,7 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
     # eta
 
     for(r in 1:lag_eta){
-      assign(paste0("delta", r), rnorm((T/lag_eta)+1, mean = 0, sd = sqrt(Var_delta)))
+      assign(paste0("delta", r), stats::rnorm((T/lag_eta)+1, mean = 0, sd = sqrt(Var_delta)))
       assign(paste0("delta", r, "_neu"), vector(mode = "double", length = N*T))
 
       assign("x", get(paste0("delta", r, "_neu")))
@@ -199,7 +195,7 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
     }
 
 
-    epsilon <- rnorm(N*T, mean = 0, sd = sqrt(Var_eta-lag_eta*Var_delta))
+    epsilon <- stats::rnorm(N*T, mean = 0, sd = sqrt(Var_eta-lag_eta*Var_delta))
     eta <- epsilon
     for(r in 1:lag_eta){
       assign("eta", eta + get(paste0("delta", r, "_neu")))
@@ -209,105 +205,117 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
 
     # y Variable erstellen
 
-    y <- 0 + X + eta
+    y <- X + eta
 
     # Paneldaten Regression durchführen
 
-    daten <- data.frame(X, y, unternehmen2, jahr2)
+    daten <- data.frame(X, y, unternehmen, jahr)
     colnames(daten) <- c("X", "y", "unternehmen", "jahr")
 
     paneldaten <- plm::pdata.frame(daten, index = c("unternehmen", "jahr"))
 
     paneldaten_Fama <- plm::pdata.frame(daten, index = c("jahr", "unternehmen"))
 
-    Reg <- plm::plm(y ~ 0 + X, data = paneldaten, model = "pooling")
-
-    Reg2 <- plm::plm(y ~ 0 + X, data = paneldaten_Fama, model = "pooling")
+    Reg <- plm::plm(y ~ X, data = paneldaten, model = "pooling")
 
     # Standardfehler berechnen
 
     # OLS Standardfehler
 
-    Sd_OLS <- lmtest::coeftest(Reg)[1,2]
+    Sd_OLS <- lmtest::coeftest(Reg)[2,2]
     Ergeb_Matrix[D,1] <- Sd_OLS
 
 
     # Fama-MacBeth Standardfehler
 
-    Reg_Fama <- plm::pmg(y ~ 0 + X, data = paneldaten_Fama, model = "mg")
+    Reg_Fama <- plm::pmg(y ~ X, data = paneldaten_Fama, model = "mg")
 
-    Sd_Fama <- lmtest::coeftest(Reg_Fama)[1,2]
+    Sd_Fama <- lmtest::coeftest(Reg_Fama)[2,2]
     Ergeb_Matrix[D,2] <- Sd_Fama
 
 
     # Cluster Standardfehler
 
-    Var_Cluster <- plm::vcovHC(Reg, cluster = "time")
-    Sd_Cluster <- sqrt(Var_Cluster)
+    Var_Cluster <- plm::vcovHC(Reg, cluster = "time", type = "sss")
+    Sd_Cluster <- sqrt(Var_Cluster[2,2])
     Ergeb_Matrix[D,3] <- Sd_Cluster
+
+
+    # Discroll-Kraay
+
+    #maxlag <- (lag_eta-1)
+    #wj <-  function(j, maxlag) 1 - j/(maxlag + 1)
+    #Var_Schock <- matrix(rep(0, times = 4), ncol = 2)
+    #Var_D_K <- plm::vcovHC(Reg, cluster = "time", type = "sss")
+    #if(maxlag > 0){
+    #  for(i in seq_len(maxlag)){
+    #    Vctl <- plm::vcovG(Reg, type = "sss", cluster = "time",
+    #                       l = i, inner = "cluster")
+    #    Var_Schock <- Var_Schock + wj(i, maxlag) * (Vctl + t(Vctl))
+    #  }
+    #}
+    #Var_D_K <- Var_D_K + Var_Schock
+
+    Var_D_K <- plm::vcovSCC(Reg, cluster = "time", maxlag = lag_D_K, type = "sss")
+
+    Sd_D_K <- sqrt(Var_D_K[2,2])
+    Ergeb_Matrix[D,4] <- Sd_D_K
 
 
     # Cluster und Schock
 
-    Var_ClusterSchock <- plm::vcovSCC(Reg, cluster = "time",
-                                      inner = "cluster", maxlag = (lag_eta-1))
-    Sd_ClusterSchock <- sqrt(Var_ClusterSchock)
-    Ergeb_Matrix[D,4] <- Sd_ClusterSchock
+    w1 <- function(j, maxlag) 1
+    Var_Cluster_S <- plm::vcovSCC(Reg, cluster = "time", wj = w1, type = "sss",
+                                  inner = "cluster", maxlag = (lag_eta-1))
+    Sd_Cluster_S <- sqrt(Var_Cluster_S[2,2])
+    Ergeb_Matrix[D,5] <- Sd_Cluster_S
 
 
     # Newey-West Standardfehler
 
-    Var_Newey <- plm::vcovNW(Reg, maxlag = (T-1), cluster = "time")
-    Sd_Newey <- sqrt(Var_Newey)
-    Ergeb_Matrix[D,5] <- Sd_Newey
+    Var_Newey <- plm::vcovNW(Reg, maxlag = (T-1))
+    Sd_Newey <- sqrt(Var_Newey[2,2])
+    Ergeb_Matrix[D,6] <- Sd_Newey
 
 
     # wahre Varianz OLS
     # Var(b|X)=(X'X)^{-1}X'\Omega X(X'X)^{-1}
-    X <- as.matrix(as.vector(paneldaten[,1]))
+
+    intercept <- as.matrix(rep(1, times = N*T))
+    X <- cbind(intercept, as.matrix(as.vector(paneldaten[,1])))
 
     wahre_Varianz_OLS <- solve(t(X)%*%X)%*%t(X)%*%Cov_Matrix_OLS%*%X%*%solve(t(X)%*%X)
 
-    wahre_Sd_OLS <- sqrt(wahre_Varianz_OLS)
-    Ergeb_Matrix[D,6] <- wahre_Sd_OLS
+    wahre_Sd_OLS <- sqrt(wahre_Varianz_OLS[2,2])
+    Ergeb_Matrix[D,7] <- wahre_Sd_OLS
 
 
     # wahre Varianz Fama
 
+    X_Mat_Fama <- cbind(intercept, as.matrix(as.data.frame(paneldaten_Fama[,1])))
+
     X_t <- vector(mode = "list", length = T)
     for(t in 1:T){
-      X_t[[t]] <- data.matrix(as.data.frame(paneldaten_Fama[(N*(t-1)+1):(N*t),1]))
+      X_t[[t]] <- X_Mat_Fama[(N*(t-1)+1):(N*t),]
     }
     X_sum1 <- vector(mode = "list", length = T)
     for(t in 1:T){
-      X_sum1[[t]] <- solve(t(X_t[[t]])%*%X_t[[t]])%*%
-        t(X_t[[t]])%*%Cov_Matrix_Fama1%*%X_t[[t]]%*%solve(t(X_t[[t]])%*%X_t[[t]])
-    }
-    X_sum2 <- vector(mode = "list", length = ((T-1)*T)/2)
-    index <- 0
-    for(t in 1:(T-1)){
-      for(s in (t+1):T){
-        index <- index + 1
-        x <- abs(t-s)
-        if(x <= (lag_eta-1)){
-          X_sum2[[index]] <- solve(t(X_t[[t]])%*%X_t[[t]])%*%t(X_t[[t]])%*%
-            Cov_Matrix_Fama2[[x+1]]%*%X_t[[s]]%*%solve(t(X_t[[s]])%*%X_t[[s]])
-        }
-        else{
-          X_sum2[[index]] <- solve(t(X_t[[t]])%*%X_t[[t]])%*%t(X_t[[t]])%*%
-            Cov_Matrix_Fama2[[1]]%*%X_t[[s]]%*%solve(t(X_t[[s]])%*%X_t[[s]])
-        }
-      }
+      X_sum1[[t]] <- (Var_eta-lag_eta*Var_delta)*solve(t(X_t[[t]])%*%X_t[[t]])
     }
 
-    wahre_Var_Fama <- (1/(T^2))*(Reduce("+", X_sum1))+2*(1/(T^2))*(Reduce("+", X_sum2))
-    wahre_Sd_Fama <- sqrt(wahre_Var_Fama)
-    Ergeb_Matrix[D,7] <- wahre_Sd_Fama
+    wahre_Var_Fama <- (1/(T^2))*(Reduce("+", X_sum1))
+    wahre_Sd_Fama <- sqrt(wahre_Var_Fama[2,2])
+    Ergeb_Matrix[D,8] <- wahre_Sd_Fama
 
   }
 
-  Ergeb_Mat <- colMeans(Ergeb_Matrix)
+  Ergeb_Mat <- colMeans(Ergeb_Matrix, na.rm = TRUE)
 
   return(Ergeb_Mat)
 
 }
+
+
+
+
+
