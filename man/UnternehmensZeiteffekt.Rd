@@ -9,8 +9,8 @@ UnternehmensZeiteffekt(
   T = 10,
   Anzahl_Regressoren = 1,
   Anz_Sim = 100,
-  Anteil_u = 0.25,
-  Anteil_delta = 0.25
+  Korr_u = 0.25,
+  Korr_delta = 0.25
 )
 }
 \arguments{
@@ -23,10 +23,10 @@ UnternehmensZeiteffekt(
 \item{Anz_Sim}{Anzahl der Simulationen. Anz_Sim bestimmt, wieviele Paneldatensätze
 mit N Unternehmen und T Perioden simuliert werden sollen.}
 
-\item{Anteil_u}{Hohe der Korrelation innerhalb der Unternehmenscluster der Fehlervariable
+\item{Korr_u}{Höhe der Korrelation innerhalb der Unternehmenscluster der Fehlervariable
 (Anteil der Varianz des Unternehmenseffekts an der gesamten Varianz der Fehlervariable)}
 
-\item{Anteil_delta}{Hohe der Korrelation innerhalb der Zeitcluster der Fehlervariable
+\item{Korr_delta}{Höhe der Korrelation innerhalb der Zeitcluster der Fehlervariable
 (Anteil der Varianz des Zeiteffekts an der gesamten Varianz der Fehlervariable)}
 }
 \value{

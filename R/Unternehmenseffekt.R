@@ -7,36 +7,39 @@
 #'
 #' @param N N bestimmt die Anzahl der Firmen im Paneldatensatz
 #' @param T T bestimmt die Anzahl der Perioden im Paneldatensatz
+#' @param sd_X Standardabweichung der erklärenden Variablen
+#' @param sd_eta Standardabweichung der Fehlervariablen
 #' @param Anzahl_Regressoren Anzahl der Regressoren
 #' @param Anz_Sim Anzahl der Simulationen. Anz_Sim bestimmt, wieviele Paneldatensätze
 #' mit N Unternehmen und T Perioden simuliert werden sollen.
-#' @param Anteil_u Hohe der Korrelation innerhalb der Unternehmenscluster der Fehlervariable
+#' @param Korr_u Höhe der Korrelation innerhalb der Unternehmenscluster der Fehlervariable
 #' (Anteil der Varianz des Unternehmenseffekts an der gesamten Varianz der Fehlervariable)
 #' @returns Vektor mit Länge 6. Durchschnittliche Schätzung der Standardfehler nach OLS, Fama-MacBeth, Cluster und Newey-West sowie
 #' die durchschnittlichen wahren Standardfehler der OLS Regression und der Fama-MacBeth Regression
 #' @importFrom plm plm
 #' @export
-Unternehmenseffekt <- function(N = 500, T = 10, Anzahl_Regressoren = 1,
-                               Anz_Sim = 100, Anteil_u = 0.25){
+Unternehmenseffekt <- function(N = 500, T = 10, sd_X = 1, sd_eta = 2,
+                               Anzahl_Regressoren = 1, Anz_Sim = 100, Korr_u = 0.25){
 
   beta <- 1
+  Var_X <- sd_X^2
+  Var_eta <- sd_eta^2
 
   # Varianz und Korrelation der erklärenden Variablen und der Fehlervariable
 
   for(i in 1:Anzahl_Regressoren){
-    assign(paste0("Anteil_mu",i),
+    assign(paste0("Korr_mu",i),
            as.double(readline(prompt = paste("Legen Sie für Regressor", paste0("X",i) , "die Höhe der Korrelation zwischen Variablen des gleichen Unternehmens fest ")))
     )
   }
   for(r in 1:Anzahl_Regressoren){
-    assign(paste0("Var_X", r), 1^2)
-    assign("x",get(paste0("Anteil_mu",r)))
+    assign(paste0("Var_X", r), Var_X)
+    assign("x",get(paste0("Korr_mu",r)))
     assign("y",get(paste0("Var_X",r)))
     assign(paste0("Var_mu", r), x*y)
   }
 
-  Var_eta <- 2^2
-  Var_u <- Anteil_u*Var_eta
+  Var_u <- Korr_u*Var_eta
 
 
   # Unternehmens- und Zeitvariable erstellen

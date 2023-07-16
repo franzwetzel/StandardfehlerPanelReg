@@ -8,11 +8,11 @@ Zeiteffekt_Schock(
   N = 500,
   T = 10,
   Anz_Sim = 100,
-  Anteil_zeta = 0.25,
-  Anteil_delta = 0.25,
-  lag_X = 0,
-  lag_eta = 0,
-  lag_D_K = 9
+  Korr_zeta = 0.25,
+  Korr_delta = 0.25,
+  D_X = 0,
+  D_eta = 0,
+  L = 9
 )
 }
 \arguments{
@@ -23,17 +23,17 @@ Zeiteffekt_Schock(
 \item{Anz_Sim}{Anzahl der Simulationen. Anz_Sim bestimmt, wieviele Paneldatensätze
 mit N Unternehmen und T Perioden simuliert werden sollen.}
 
-\item{Anteil_zeta}{Hohe der Korrelation innerhalb der Zeitcluster der erklärenden Variable
+\item{Korr_zeta}{Höhe der Korrelation innerhalb der Zeitcluster der erklärenden Variable
 (Anteil der Varianz des Zeiteffekts an der gesamten Varianz der erklärenden Variable)}
 
-\item{Anteil_delta}{Hohe der Korrelation innerhalb der Zeitcluster der Fehlervariable
+\item{Korr_delta}{Höhe der Korrelation innerhalb der Zeitcluster der Fehlervariable
 (Anteil der Varianz des Zeiteffekts an der gesamten Varianz der Fehlervariable)}
 
-\item{lag_X}{Distanz |t-s| für die, die erklärenden Variablen verschiedener Perioden korreliert sind}
+\item{D_X}{Distanz |t-s| für die, die erklärenden Variablen verschiedener Perioden korreliert sind}
 
-\item{lag_eta}{Distanz |t-s| für die, die Fehlervariablen verschiedener Perioden korreliert sind}
+\item{D_eta}{Distanz |t-s| für die, die Fehlervariablen verschiedener Perioden korreliert sind}
 
-\item{lag_D_K}{Höhe des L des Discroll-Kraay Schätzers}
+\item{L}{Höhe des L des Discroll-Kraay Schätzers}
 }
 \value{
 Vektor mit Länge 8. Durchschnittliche Schätzung der Standardfehler nach OLS, Fama-MacBeth, Cluster,

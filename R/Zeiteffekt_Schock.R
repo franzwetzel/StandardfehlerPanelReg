@@ -9,43 +9,43 @@
 #' @param T T bestimmt die Anzahl der Perioden im Paneldatensatz
 #' @param Anz_Sim Anzahl der Simulationen. Anz_Sim bestimmt, wieviele Paneldatensätze
 #' mit N Unternehmen und T Perioden simuliert werden sollen.
-#' @param Anteil_zeta Hohe der Korrelation innerhalb der Zeitcluster der erklärenden Variable
+#' @param Korr_zeta Höhe der Korrelation innerhalb der Zeitcluster der erklärenden Variable
 #' (Anteil der Varianz des Zeiteffekts an der gesamten Varianz der erklärenden Variable)
-#' @param Anteil_delta Hohe der Korrelation innerhalb der Zeitcluster der Fehlervariable
+#' @param Korr_delta Höhe der Korrelation innerhalb der Zeitcluster der Fehlervariable
 #' (Anteil der Varianz des Zeiteffekts an der gesamten Varianz der Fehlervariable)
-#' @param lag_X Distanz |t-s| für die, die erklärenden Variablen verschiedener Perioden korreliert sind
-#' @param lag_eta Distanz |t-s| für die, die Fehlervariablen verschiedener Perioden korreliert sind
-#' @param lag_D_K Höhe des L des Discroll-Kraay Schätzers
+#' @param D_X Distanz |t-s| für die, die erklärenden Variablen verschiedener Perioden korreliert sind
+#' @param D_eta Distanz |t-s| für die, die Fehlervariablen verschiedener Perioden korreliert sind
+#' @param L Höhe des L des Discroll-Kraay Schätzers
 #' @returns Vektor mit Länge 8. Durchschnittliche Schätzung der Standardfehler nach OLS, Fama-MacBeth, Cluster,
 #' Discroll-Kraay, Cluster-Schock und Newey-West sowie
 #' der durchschnittlichen wahren Standardfehler der OLS Regression und der Fama-MacBeth Regression
 #' @importFrom plm plm
 #' @export
 Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
-                              Anteil_zeta = 0.25, Anteil_delta = 0.25,
-                              lag_X = 0, lag_eta = 0, lag_D_K = 9){
+                              Korr_zeta = 0.25, Korr_delta = 0.25,
+                              D_X = 0, D_eta = 0, L = 9){
 
-  lag_X <- lag_X + 1
-  lag_eta <- lag_eta + 1
+  D_X <- D_X + 1
+  D_eta <- D_eta + 1
 
   beta <- 1
 
   Var_X <- 1
   Var_eta <- 2^2
 
-  Cov_Cluster_X <- Anteil_zeta*Var_X
-  Cov_Cluster_eta <- Anteil_delta*Var_eta
+  Cov_Cluster_X <- Korr_zeta*Var_X
+  Cov_Cluster_eta <- Korr_delta*Var_eta
 
-  Var_zeta <- Cov_Cluster_X/lag_X
-  Var_delta <- Cov_Cluster_eta/lag_eta
+  Var_zeta <- Cov_Cluster_X/D_X
+  Var_delta <- Cov_Cluster_eta/D_eta
 
   # Fehlermeldungen
 
-  if((T %% lag_X) != 0 | (T %% lag_eta) != 0){
-    stop(paste(N, "ist nicht durch", lag_eta, "teilbar"))
+  if((T %% D_X) != 0 | (T %% D_eta) != 0){
+    stop(paste(N, "ist nicht durch", D_eta, "teilbar"))
   }
 
-  if(Var_X < (lag_eta*Var_zeta) | Var_eta < (lag_eta*Var_delta)){
+  if(Var_X < (D_eta*Var_zeta) | Var_eta < (D_eta*Var_delta)){
     stop("Die Varianz der Unternehmenseffekte ist größer als die Varianz des Regressors oder der Fehlervariable")
   }
 
@@ -79,10 +79,10 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
             Cov_Matrix_OLS[T*(i-1)+t,T*(j-1)+s] <- Var_eta
           }
           else if(x==0){
-            Cov_Matrix_OLS[T*(i-1)+t,T*(j-1)+s] <- lag_eta*Var_delta
+            Cov_Matrix_OLS[T*(i-1)+t,T*(j-1)+s] <- D_eta*Var_delta
           }
-          else if(lag_eta > 1 & x > 0 & x <= (lag_eta-1)){
-            Cov_Matrix_OLS[T*(i-1)+t,T*(j-1)+s] <- (lag_eta-x)*Var_delta
+          else if(D_eta > 1 & x > 0 & x <= (D_eta-1)){
+            Cov_Matrix_OLS[T*(i-1)+t,T*(j-1)+s] <- (D_eta-x)*Var_delta
           }
           else{
             Cov_Matrix_OLS[T*(i-1)+t,T*(j-1)+s] <- 0
@@ -104,11 +104,11 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
       }
     }
   }
-  Cov_Matrix_Fama2 <- vector(mode = "list", length = lag_eta)
+  Cov_Matrix_Fama2 <- vector(mode = "list", length = D_eta)
   Cov_Matrix_Fama2[[1]] <- matrix(rep(0, times = N*N), ncol = N)
-  if(lag_eta>1){
-    for(i in 2:lag_eta){
-      Cov_Matrix_Fama2[[i]] <- matrix(rep((lag_eta-(i-1))*Var_delta, times = N*N), ncol = N)
+  if(D_eta>1){
+    for(i in 2:D_eta){
+      Cov_Matrix_Fama2[[i]] <- matrix(rep((D_eta-(i-1))*Var_delta, times = N*N), ncol = N)
     }
   }
 
@@ -116,7 +116,7 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
   # Vorbereitung Simulation
 
   Ergeb_Matrix <- matrix(rep(0, times = Anz_Sim*8), ncol = 8)
-  colnames(Ergeb_Matrix) <- c("OLS", "Fama-MacBeth", "Cluster", "Driscoll-Kraay", "Cluster, Schock",
+  colnames(Ergeb_Matrix) <- c("OLS", "Fama-MacBeth", "Cluster", "Driscoll-Kraay", "Cluster-Schock",
                               "Newey-West", "wahre Standardabweichung OLS", "wahre Standardabweichung Fama")
 
 
@@ -129,27 +129,27 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
 
     # X
 
-    for(r in 1:lag_X){
-      assign(paste0("zeta", r), stats::rnorm((T/lag_X)+1, mean = 0, sd = sqrt(Var_zeta)))
+    for(r in 1:D_X){
+      assign(paste0("zeta", r), stats::rnorm((T/D_X)+1, mean = 0, sd = sqrt(Var_zeta)))
       assign(paste0("zeta", r, "_neu"), vector(mode = "double", length = N*T))
 
       assign("x", get(paste0("zeta", r, "_neu")))
       assign("y", get(paste0("zeta", r)))
-      for(t in 1:((T/lag_X)-1)){
-        for(i in 1:(N*lag_X)){
-          x[(r-1)*N+(t-1)*(N*lag_X)+i] <- y[t]
+      for(t in 1:((T/D_X)-1)){
+        for(i in 1:(N*D_X)){
+          x[(r-1)*N+(t-1)*(N*D_X)+i] <- y[t]
         }
       }
       if(r == 1){
-        for(z in 1:(N*lag_X)){
-          x[(r-1)*N+((T/lag_X)-1)*(N*lag_X)+z] <- y[(T/lag_X)]
+        for(z in 1:(N*D_X)){
+          x[(r-1)*N+((T/D_X)-1)*(N*D_X)+z] <- y[(T/D_X)]
         }
       }else{
         for(l in 1:(N*(r-1))){
-          x[l] <- y[(T/lag_X)]
+          x[l] <- y[(T/D_X)]
         }
-        for(f in 1:(N*(lag_X-(r-1)))){
-          x[(r-1)*N+((T/lag_X)-1)*(N*lag_X)+f] <- y[(T/lag_X)+1]
+        for(f in 1:(N*(D_X-(r-1)))){
+          x[(r-1)*N+((T/D_X)-1)*(N*D_X)+f] <- y[(T/D_X)+1]
         }
       }
 
@@ -157,9 +157,9 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
     }
 
 
-    nu <- stats::rnorm(N*T, mean = 0, sd = sqrt(Var_X-lag_X*Var_zeta))
+    nu <- stats::rnorm(N*T, mean = 0, sd = sqrt(Var_X-D_X*Var_zeta))
     X <- nu
-    for(r in 1:lag_X){
+    for(r in 1:D_X){
       assign("X", X + get(paste0("zeta", r, "_neu")))
     }
 
@@ -167,27 +167,27 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
 
     # eta
 
-    for(r in 1:lag_eta){
-      assign(paste0("delta", r), stats::rnorm((T/lag_eta)+1, mean = 0, sd = sqrt(Var_delta)))
+    for(r in 1:D_eta){
+      assign(paste0("delta", r), stats::rnorm((T/D_eta)+1, mean = 0, sd = sqrt(Var_delta)))
       assign(paste0("delta", r, "_neu"), vector(mode = "double", length = N*T))
 
       assign("x", get(paste0("delta", r, "_neu")))
       assign("y", get(paste0("delta", r)))
-      for(t in 1:((T/lag_eta)-1)){
-        for(i in 1:(N*lag_eta)){
-          x[(r-1)*N+(t-1)*(N*lag_eta)+i] <- y[t]
+      for(t in 1:((T/D_eta)-1)){
+        for(i in 1:(N*D_eta)){
+          x[(r-1)*N+(t-1)*(N*D_eta)+i] <- y[t]
         }
       }
       if(r == 1){
-        for(z in 1:(N*lag_eta)){
-          x[(r-1)*N+((T/lag_eta)-1)*(N*lag_eta)+z] <- y[(T/lag_eta)]
+        for(z in 1:(N*D_eta)){
+          x[(r-1)*N+((T/D_eta)-1)*(N*D_eta)+z] <- y[(T/D_eta)]
         }
       }else{
         for(l in 1:(N*(r-1))){
-          x[l] <- y[(T/lag_eta)]
+          x[l] <- y[(T/D_eta)]
         }
-        for(f in 1:(N*(lag_eta-(r-1)))){
-          x[(r-1)*N+((T/lag_eta)-1)*(N*lag_eta)+f] <- y[(T/lag_eta)+1]
+        for(f in 1:(N*(D_eta-(r-1)))){
+          x[(r-1)*N+((T/D_eta)-1)*(N*D_eta)+f] <- y[(T/D_eta)+1]
         }
       }
 
@@ -195,9 +195,9 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
     }
 
 
-    epsilon <- stats::rnorm(N*T, mean = 0, sd = sqrt(Var_eta-lag_eta*Var_delta))
+    epsilon <- stats::rnorm(N*T, mean = 0, sd = sqrt(Var_eta-D_eta*Var_delta))
     eta <- epsilon
-    for(r in 1:lag_eta){
+    for(r in 1:D_eta){
       assign("eta", eta + get(paste0("delta", r, "_neu")))
     }
 
@@ -243,7 +243,7 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
 
     # Discroll-Kraay
 
-    #maxlag <- (lag_eta-1)
+    #maxlag <- (D_eta-1)
     #wj <-  function(j, maxlag) 1 - j/(maxlag + 1)
     #Var_Schock <- matrix(rep(0, times = 4), ncol = 2)
     #Var_D_K <- plm::vcovHC(Reg, cluster = "time", type = "sss")
@@ -256,7 +256,7 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
     #}
     #Var_D_K <- Var_D_K + Var_Schock
 
-    Var_D_K <- plm::vcovSCC(Reg, cluster = "time", maxlag = lag_D_K, type = "sss")
+    Var_D_K <- plm::vcovSCC(Reg, cluster = "time", maxlag = L, type = "sss")
 
     Sd_D_K <- sqrt(Var_D_K[2,2])
     Ergeb_Matrix[D,4] <- Sd_D_K
@@ -266,7 +266,7 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
 
     w1 <- function(j, maxlag) 1
     Var_Cluster_S <- plm::vcovSCC(Reg, cluster = "time", wj = w1, type = "sss",
-                                  inner = "cluster", maxlag = (lag_eta-1))
+                                  inner = "cluster", maxlag = (D_eta-1))
     Sd_Cluster_S <- sqrt(Var_Cluster_S[2,2])
     Ergeb_Matrix[D,5] <- Sd_Cluster_S
 
@@ -300,7 +300,7 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
     }
     X_sum1 <- vector(mode = "list", length = T)
     for(t in 1:T){
-      X_sum1[[t]] <- (Var_eta-lag_eta*Var_delta)*solve(t(X_t[[t]])%*%X_t[[t]])
+      X_sum1[[t]] <- (Var_eta-D_eta*Var_delta)*solve(t(X_t[[t]])%*%X_t[[t]])
     }
 
     wahre_Var_Fama <- (1/(T^2))*(Reduce("+", X_sum1))
@@ -314,8 +314,4 @@ Zeiteffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
   return(Ergeb_Mat)
 
 }
-
-
-
-
 

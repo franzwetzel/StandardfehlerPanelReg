@@ -7,9 +7,11 @@
 Unternehmenseffekt(
   N = 500,
   T = 10,
+  sd_X = 1,
+  sd_eta = 2,
   Anzahl_Regressoren = 1,
   Anz_Sim = 100,
-  Anteil_u = 0.25
+  Korr_u = 0.25
 )
 }
 \arguments{
@@ -17,12 +19,16 @@ Unternehmenseffekt(
 
 \item{T}{T bestimmt die Anzahl der Perioden im Paneldatensatz}
 
+\item{sd_X}{Standardabweichung der erklärenden Variablen}
+
+\item{sd_eta}{Standardabweichung der Fehlervariablen}
+
 \item{Anzahl_Regressoren}{Anzahl der Regressoren}
 
 \item{Anz_Sim}{Anzahl der Simulationen. Anz_Sim bestimmt, wieviele Paneldatensätze
 mit N Unternehmen und T Perioden simuliert werden sollen.}
 
-\item{Anteil_u}{Hohe der Korrelation innerhalb der Unternehmenscluster der Fehlervariable
+\item{Korr_u}{Höhe der Korrelation innerhalb der Unternehmenscluster der Fehlervariable
 (Anteil der Varianz des Unternehmenseffekts an der gesamten Varianz der Fehlervariable)}
 }
 \value{

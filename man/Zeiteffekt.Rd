@@ -9,7 +9,7 @@ Zeiteffekt(
   T = 10,
   Anzahl_Regressoren = 1,
   Anz_Sim = 100,
-  Anteil_delta = 0.25
+  Korr_delta = 0.25
 )
 }
 \arguments{
@@ -22,7 +22,7 @@ Zeiteffekt(
 \item{Anz_Sim}{Anzahl der Simulationen. Anz_Sim bestimmt, wieviele Paneldatensätze
 mit N Unternehmen und T Perioden simuliert werden sollen.}
 
-\item{Anteil_delta}{Hohe der Korrelation innerhalb der Zeitcluster der Fehlervariable
+\item{Korr_delta}{Höhe der Korrelation innerhalb der Zeitcluster der Fehlervariable
 (Anteil der Varianz des Zeiteffekts an der gesamten Varianz der Fehlervariable)}
 }
 \value{

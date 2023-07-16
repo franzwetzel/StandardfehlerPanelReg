@@ -9,43 +9,43 @@
 #' @param T T bestimmt die Anzahl der Perioden im Paneldatensatz
 #' @param Anz_Sim Anzahl der Simulationen. Anz_Sim bestimmt, wieviele Paneldatensätze
 #' mit N Unternehmen und T Perioden simuliert werden sollen.
-#' @param Anteil_mu Hohe der Korrelation innerhalb der Unternehmenscluster der erklärenden Variable
+#' @param Korr_mu Höhe der Korrelation innerhalb der Unternehmenscluster der erklärenden Variable
 #' (Anteil der Varianz des Unternehmenseffekts an der gesamten Varianz der erklärenden Variable)
-#' @param Anteil_u Hohe der Korrelation innerhalb der Unternehmenscluster der Fehlervariable
+#' @param Korr_u Höhe der Korrelation innerhalb der Unternehmenscluster der Fehlervariable
 #' (Anteil der Varianz des Unternehmenseffekts an der gesamten Varianz der Fehlervariable)
-#' @param lag_X Distanz |i-j| für die, die erklärenden Variablen verschiedener Unternehmen korreliert sind
-#' @param lag_eta Distanz |i-j| für die, die Fehlervariablen verschiedener Unternehmen korreliert sind
-#' @param lag_D_K Höhe des L des Discroll-Kraay Schätzers
+#' @param D_X Distanz |i-j| für die, die erklärenden Variablen verschiedener Unternehmen korreliert sind
+#' @param D_eta Distanz |i-j| für die, die Fehlervariablen verschiedener Unternehmen korreliert sind
+#' @param L Höhe des L des Discroll-Kraay Schätzers
 #' @returns Vektor mit Länge 8. Durchschnittliche Schätzung der Standardfehler nach OLS, Fama-MacBeth, Cluster,
 #' Discroll-Kraay, Cluster-Schock und Newey-West sowie
 #' der durchschnittlichen wahren Standardfehler der OLS Regression und der Fama-MacBeth Regression
 #' @importFrom plm plm
 #' @export
 Unternehmenseffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
-                                      Anteil_mu = 0.25, Anteil_u = 0.25,
-                                      lag_X = 0, lag_eta = 0, lag_D_K = 10){
+                                      Korr_mu = 0.25, Korr_u = 0.25,
+                                      D_X = 0, D_eta = 0, L = 10){
 
-  lag_X <- lag_X + 1
-  lag_eta <- lag_eta + 1
+  D_X <- D_X + 1
+  D_eta <- D_eta + 1
 
   beta <- 1
 
   Var_X <- 1
   Var_eta <- 2^2
 
-  Cov_Cluster_X <- Anteil_mu*Var_X
-  Cov_Cluster_eta <- Anteil_u*Var_eta
+  Cov_Cluster_X <- Korr_mu*Var_X
+  Cov_Cluster_eta <- Korr_u*Var_eta
 
-  Var_mu <- Cov_Cluster_X/lag_X
-  Var_u <- Cov_Cluster_eta/lag_eta
+  Var_mu <- Cov_Cluster_X/D_X
+  Var_u <- Cov_Cluster_eta/D_eta
 
   # Fehlermeldungen
 
-  if((N %% lag_X) != 0 | (N %% lag_eta) != 0){
-    stop(paste(N, "ist nicht durch", lag_eta, "teilbar"))
+  if((N %% D_X) != 0 | (N %% D_eta) != 0){
+    stop(paste(N, "ist nicht durch", D_eta, "teilbar"))
   }
 
-  if(Var_X < (lag_eta*Var_mu) | Var_eta < (lag_eta*Var_u)){
+  if(Var_X < (D_eta*Var_mu) | Var_eta < (D_eta*Var_u)){
     stop("Die Varianz der Unternehmenseffekte ist größer als die Varianz des Regressors oder der Fehlervariable")
   }
 
@@ -78,10 +78,10 @@ Unternehmenseffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
             Cov_Matrix_OLS[T*(i-1)+t,T*(j-1)+s] <- Var_eta
           }
           else if(i==j){
-            Cov_Matrix_OLS[T*(i-1)+t,T*(j-1)+s] <- lag_eta*Var_u
+            Cov_Matrix_OLS[T*(i-1)+t,T*(j-1)+s] <- D_eta*Var_u
           }
-          else if(lag_eta > 1 & x > 0 & x <= (lag_eta-1)){
-            Cov_Matrix_OLS[T*(i-1)+t,T*(j-1)+s] <- (lag_eta-x)*Var_u
+          else if(D_eta > 1 & x > 0 & x <= (D_eta-1)){
+            Cov_Matrix_OLS[T*(i-1)+t,T*(j-1)+s] <- (D_eta-x)*Var_u
           }
           else{
             Cov_Matrix_OLS[T*(i-1)+t,T*(j-1)+s] <- 0
@@ -99,8 +99,8 @@ Unternehmenseffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
       if(i==j){
         Cov_Matrix_Fama1[i,j] <- Var_eta
       }
-      else if(lag_eta > 1 & x > 0 & x <= (lag_eta-1)){
-        Cov_Matrix_Fama1[i,j] <- (lag_eta-x)*Var_u
+      else if(D_eta > 1 & x > 0 & x <= (D_eta-1)){
+        Cov_Matrix_Fama1[i,j] <- (D_eta-x)*Var_u
       }
       else{
         Cov_Matrix_Fama1[i,j] <- 0
@@ -112,10 +112,10 @@ Unternehmenseffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
     for(j in 1:N){
       x <- abs(i-j)
       if(i==j){
-        Cov_Matrix_Fama2[i,j] <- lag_eta*Var_u
+        Cov_Matrix_Fama2[i,j] <- D_eta*Var_u
       }
-      else if(lag_eta > 1 & x > 0 & x <= (lag_eta-1)){
-        Cov_Matrix_Fama1[i,j] <- (lag_eta-x)*Var_u
+      else if(D_eta > 1 & x > 0 & x <= (D_eta-1)){
+        Cov_Matrix_Fama1[i,j] <- (D_eta-x)*Var_u
       }
       else{
         Cov_Matrix_Fama2[i,j] <- 0
@@ -140,27 +140,27 @@ Unternehmenseffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
 
     # X
 
-    for(r in 1:lag_X){
-      assign(paste0("mu", r), stats::rnorm((N/lag_X)+1, mean = 0, sd = sqrt(Var_mu)))
+    for(r in 1:D_X){
+      assign(paste0("mu", r), stats::rnorm((N/D_X)+1, mean = 0, sd = sqrt(Var_mu)))
       assign("y", get(paste0("mu", r)))
       assign(paste0("mu", r, "_neu"), vector(mode = "double", length = N*T))
       assign("x", get(paste0("mu", r, "_neu")))
 
-      for(i in 1:((N/lag_X)-1)){
-        for(t in 1:(T*lag_X)){
-          x[(r-1)*T+(i-1)*(T*lag_X)+t] <- y[i]
+      for(i in 1:((N/D_X)-1)){
+        for(t in 1:(T*D_X)){
+          x[(r-1)*T+(i-1)*(T*D_X)+t] <- y[i]
         }
       }
       if(r == 1){
-        for(z in 1:(T*lag_X)){
-          x[(r-1)*T+((N/lag_X)-1)*(T*lag_X)+z] <- y[(N/lag_X)]
+        for(z in 1:(T*D_X)){
+          x[(r-1)*T+((N/D_X)-1)*(T*D_X)+z] <- y[(N/D_X)]
         }
       }else{
         for(l in 1:(T*(r-1))){
-          x[l] <- y[(N/lag_X)]
+          x[l] <- y[(N/D_X)]
         }
-        for(f in 1:(T*(lag_X-(r-1)))){
-          x[(r-1)*T+((N/lag_X)-1)*(T*lag_X)+f] <- y[(N/lag_X)+1]
+        for(f in 1:(T*(D_X-(r-1)))){
+          x[(r-1)*T+((N/D_X)-1)*(T*D_X)+f] <- y[(N/D_X)+1]
         }
       }
 
@@ -168,9 +168,9 @@ Unternehmenseffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
     }
 
 
-    nu <- stats::rnorm(N*T, mean = 0, sd = sqrt(Var_X-lag_X*Var_mu))
+    nu <- stats::rnorm(N*T, mean = 0, sd = sqrt(Var_X-D_X*Var_mu))
     X <- nu
-    for(r in 1:lag_X){
+    for(r in 1:D_X){
       assign("X", X + get(paste0("mu", r, "_neu")))
     }
 
@@ -178,27 +178,27 @@ Unternehmenseffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
 
     # eta
 
-    for(r in 1:lag_eta){
-      assign(paste0("u", r), stats::rnorm((N/lag_eta)+1, mean = 0, sd = sqrt(Var_u)))
+    for(r in 1:D_eta){
+      assign(paste0("u", r), stats::rnorm((N/D_eta)+1, mean = 0, sd = sqrt(Var_u)))
       assign("y", get(paste0("u", r)))
       assign(paste0("u", r, "_neu"), vector(mode = "double", length = N*T))
       assign("x", get(paste0("u", r, "_neu")))
 
-      for(i in 1:((N/lag_eta)-1)){
-        for(t in 1:(T*lag_eta)){
-          x[(r-1)*T+(i-1)*(T*lag_eta)+t] <- y[i]
+      for(i in 1:((N/D_eta)-1)){
+        for(t in 1:(T*D_eta)){
+          x[(r-1)*T+(i-1)*(T*D_eta)+t] <- y[i]
         }
       }
       if(r == 1){
-        for(z in 1:(T*lag_eta)){
-          x[(r-1)*T+((N/lag_eta)-1)*(T*lag_eta)+z] <- y[(N/lag_eta)]
+        for(z in 1:(T*D_eta)){
+          x[(r-1)*T+((N/D_eta)-1)*(T*D_eta)+z] <- y[(N/D_eta)]
         }
       }else{
         for(l in 1:(T*(r-1))){
-          x[l] <- y[(N/lag_eta)]
+          x[l] <- y[(N/D_eta)]
         }
-        for(f in 1:(T*(lag_eta-(r-1)))){
-          x[(r-1)*T+((N/lag_eta)-1)*(T*lag_eta)+f] <- y[(N/lag_eta)+1]
+        for(f in 1:(T*(D_eta-(r-1)))){
+          x[(r-1)*T+((N/D_eta)-1)*(T*D_eta)+f] <- y[(N/D_eta)+1]
         }
       }
 
@@ -206,9 +206,9 @@ Unternehmenseffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
     }
 
 
-    epsilon <- stats::rnorm(N*T, mean = 0, sd = sqrt(Var_eta-lag_eta*Var_u))
+    epsilon <- stats::rnorm(N*T, mean = 0, sd = sqrt(Var_eta-D_eta*Var_u))
     eta <- epsilon
-    for(r in 1:lag_eta){
+    for(r in 1:D_eta){
       assign("eta", eta + get(paste0("u", r, "_neu")))
     }
 
@@ -255,7 +255,7 @@ Unternehmenseffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
 
     # Driscoll-Kraay
 
-    #maxlag <- (lag_eta-1) + 20
+    #maxlag <- L
     #wj <-  function(j, maxlag) 1 - j/(maxlag + 1)
     #Var_Schock <- matrix(rep(0, times = 4), ncol = 2)
     #Var_ClusterSchock <- plm::vcovHC(Reg, cluster = "group", type = "sss")
@@ -269,7 +269,7 @@ Unternehmenseffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
     #Var_ClusterSchock <- Var_ClusterSchock + Var_Schock
 
     Var_D_K <- plm::vcovSCC(Reg, cluster = "group", type = "sss",
-                            inner = "cluster", maxlag = lag_D_K)
+                            inner = "cluster", maxlag = L)
     Sd_D_K <- sqrt(Var_D_K[2,2])
     Ergeb_Matrix[D,4] <- Sd_D_K
 
@@ -278,7 +278,7 @@ Unternehmenseffekt_Schock <- function(N = 500, T = 10, Anz_Sim = 100,
 
     w1 <- function(j, maxlag) 1
     Var_Cluster_S <- plm::vcovSCC(Reg, cluster = "group", wj = w1, type = "sss",
-                                  inner = "cluster", maxlag = (lag_eta-1))
+                                  inner = "cluster", maxlag = (D_eta-1))
     Sd_Cluster_S <- sqrt(Var_Cluster_S[2,2])
     Ergeb_Matrix[D,5] <- Sd_Cluster_S
 

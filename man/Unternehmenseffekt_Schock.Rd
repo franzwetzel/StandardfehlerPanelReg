@@ -8,11 +8,11 @@ Unternehmenseffekt_Schock(
   N = 500,
   T = 10,
   Anz_Sim = 100,
-  Anteil_mu = 0.25,
-  Anteil_u = 0.25,
-  lag_X = 0,
-  lag_eta = 0,
-  lag_D_K = 10
+  Korr_mu = 0.25,
+  Korr_u = 0.25,
+  D_X = 0,
+  D_eta = 0,
+  L = 10
 )
 }
 \arguments{
@@ -23,17 +23,17 @@ Unternehmenseffekt_Schock(
 \item{Anz_Sim}{Anzahl der Simulationen. Anz_Sim bestimmt, wieviele Paneldatensätze
 mit N Unternehmen und T Perioden simuliert werden sollen.}
 
-\item{Anteil_mu}{Hohe der Korrelation innerhalb der Unternehmenscluster der erklärenden Variable
+\item{Korr_mu}{Höhe der Korrelation innerhalb der Unternehmenscluster der erklärenden Variable
 (Anteil der Varianz des Unternehmenseffekts an der gesamten Varianz der erklärenden Variable)}
 
-\item{Anteil_u}{Hohe der Korrelation innerhalb der Unternehmenscluster der Fehlervariable
+\item{Korr_u}{Höhe der Korrelation innerhalb der Unternehmenscluster der Fehlervariable
 (Anteil der Varianz des Unternehmenseffekts an der gesamten Varianz der Fehlervariable)}
 
-\item{lag_X}{Distanz |i-j| für die, die erklärenden Variablen verschiedener Unternehmen korreliert sind}
+\item{D_X}{Distanz |i-j| für die, die erklärenden Variablen verschiedener Unternehmen korreliert sind}
 
-\item{lag_eta}{Distanz |i-j| für die, die Fehlervariablen verschiedener Unternehmen korreliert sind}
+\item{D_eta}{Distanz |i-j| für die, die Fehlervariablen verschiedener Unternehmen korreliert sind}
 
-\item{lag_D_K}{Höhe des L des Discroll-Kraay Schätzers}
+\item{L}{Höhe des L des Discroll-Kraay Schätzers}
 }
 \value{
 Vektor mit Länge 8. Durchschnittliche Schätzung der Standardfehler nach OLS, Fama-MacBeth, Cluster,

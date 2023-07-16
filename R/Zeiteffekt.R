@@ -10,33 +10,33 @@
 #' @param Anzahl_Regressoren Anzahl der Regressoren
 #' @param Anz_Sim Anzahl der Simulationen. Anz_Sim bestimmt, wieviele Paneldatensätze
 #' mit N Unternehmen und T Perioden simuliert werden sollen.
-#' @param Anteil_delta Hohe der Korrelation innerhalb der Zeitcluster der Fehlervariable
+#' @param Korr_delta Höhe der Korrelation innerhalb der Zeitcluster der Fehlervariable
 #' (Anteil der Varianz des Zeiteffekts an der gesamten Varianz der Fehlervariable)
 #' @returns Vektor mit Länge 6. Durchschnittliche Schätzung der Standardfehler nach OLS, Fama-MacBeth, Cluster und Newey-West sowie
 #' die durchschnittlichen wahren Standardfehler der OLS Regression und der Fama-MacBeth Regression
 #' @importFrom plm plm
 #' @export
 Zeiteffekt <- function(N = 500, T = 10, Anzahl_Regressoren = 1,
-                       Anz_Sim = 100, Anteil_delta = 0.25){
+                       Anz_Sim = 100, Korr_delta = 0.25){
 
   beta <- 1
 
   # Varianz und Korrelation der erklärenden Variablen und der Fehlervariable
 
   for(i in 1:Anzahl_Regressoren){
-    assign(paste0("Anteil_zeta",i),
+    assign(paste0("Korr_zeta",i),
            as.double(readline(prompt = paste("Legen Sie für Regressor", paste0("X",i) , "die Höhe der Korrelation zwischen Variablen der gleichen Periode fest ")))
     )
   }
   for(r in 1:Anzahl_Regressoren){
     assign(paste0("Var_X", r), 1^2)
-    assign("x", get(paste0("Anteil_zeta",r)))
+    assign("x", get(paste0("Korr_zeta",r)))
     assign("y", get(paste0("Var_X",r)))
     assign(paste0("Var_zeta", r), x*y)
   }
 
   Var_eta <- 2^2
-  Var_delta <- Anteil_delta*Var_eta
+  Var_delta <- Korr_delta*Var_eta
 
 
   # Unternehmens- und Zeitvariable erstellen

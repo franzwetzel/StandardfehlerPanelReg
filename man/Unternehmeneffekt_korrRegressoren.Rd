@@ -9,7 +9,7 @@ Unternehmeneffekt_korrRegressoren(
   T = 10,
   Anzahl_Regressoren = 2,
   Anz_Sim = 100,
-  Anteil_u = 0.25,
+  Korr_u = 0.25,
   Corr_nu = 0.3,
   Corr_mu = 0.3
 )
@@ -24,13 +24,13 @@ Unternehmeneffekt_korrRegressoren(
 \item{Anz_Sim}{Anzahl der Simulationen. Anz_Sim bestimmt, wieviele Paneldatensätze
 mit N Unternehmen und T Perioden simuliert werden sollen.}
 
-\item{Anteil_u}{Hohe der Korrelation innerhalb der Unternehmenscluster der Fehlervariable
+\item{Korr_u}{Höhe der Korrelation innerhalb der Unternehmenscluster der Fehlervariable
 (Anteil der Varianz des Unternehmenseffekts an der gesamten Varianz der Fehlervariable)}
 
 \item{Corr_nu}{Höhe der Korrelation zwischen den Komponenten der erklärenden Variablen,
 die sich für jedes Unternehmen und jede Periode neu realisieren}
 
-\item{Corr_mu}{Hohe der Korrelation zwischen den Unternehmenseffekten der Regressoren}
+\item{Corr_mu}{Höhe der Korrelation zwischen den Unternehmenseffekten der Regressoren}
 }
 \value{
 Vektor mit Länge 6. Durchschnittliche Schätzung der Standardfehler nach OLS, Fama-MacBeth, Cluster und Newey-West sowie
